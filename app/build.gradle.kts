@@ -8,11 +8,11 @@ plugins {
 }
 
 android {
-    namespace = "com.azg.alf_002_qrscan"
+    namespace = "com.dong.sample"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.azg.alf_002_qrscan"
+        applicationId = "com.dong.sample"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -73,7 +73,7 @@ android {
     flavorDimensions.add("version")
     productFlavors {
         create("dev") {
-            applicationId = "com.azg.alf_002_qrscan"
+            applicationId = "com.dong.sample"
             manifestPlaceholders["ad_app_id"] = ""
 
             buildConfigField("boolean", "build_debug", "true")

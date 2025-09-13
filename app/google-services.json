@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:31911324838:android:0a2c77a2541f6283205867",
         "android_client_info": {
-          "package_name": "com.azg.alf_002_qrscan"
+          "package_name": "com.azg.sample"
         }
       },
       "oauth_client": [],

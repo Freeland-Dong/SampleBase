@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ALF-002-QrScan"
+rootProject.name = "Sample-Base-App"
 include(":app")
