@@ -3,10 +3,12 @@ package com.azg.alf_002_qrscan.base
 import android.os.Build
 import android.view.Window
 import android.view.WindowManager
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
+val LocalKeyboardShow = staticCompositionLocalOf { false }
 
 fun Window.setFullScreen() {
     WindowCompat.setDecorFitsSystemWindows(this, false)

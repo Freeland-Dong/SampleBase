@@ -1,4 +1,4 @@
-package com.dong.loancalculator.base
+package com.azg.alf_002_qrscan.base
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -43,12 +43,11 @@ import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import com.azg.alf_002_qrscan.app.PreferenceData
 import com.azg.alf_002_qrscan.style.AppViewTheme
+import com.azg.alf_002_qrscan.style.pxToDp
+import com.azg.alf_002_qrscan.style.white
 import java.io.Serializable
-
-/**
- * Smart base activity with keyboard handling and system bar management
- */
 @Suppress("DEPRECATION")
 abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompatActivity() {
     data class InnerPadding(
@@ -60,6 +59,7 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
     )
 
     data class KeyboardState(val visible: Boolean, val heightPx: Int)
+
     private var observer: DefaultLifecycleObserver? = null
     private val statusBarHeight: Int
         @SuppressLint("DiscouragedApi", "InternalInsetResource")
@@ -67,24 +67,31 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
             .takeIf { it > 0 }?.let { resources.getDimensionPixelSize(it) } ?: 0
     @Composable
     abstract fun Initialize()
-
     @Composable
     abstract fun BoxScope.ContentView(innerPadding: InnerPadding, context: Context)
     @Composable
-    open fun ViewDialog() {}
+    open fun ViewDialog() {
+    }
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
-        PreferenceData.setLocale(this@BaseActivity, PreferenceData.languageCode)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setupSystemBars()
         setContent { ComposeContent() }
     }
 
+    override fun attachBaseContext(newBase: Context?) {
+        super.attachBaseContext(newBase)
+        newBase?.let {
+            PreferenceData.setLocale(newBase, PreferenceData.languageCode)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         observer?.let { lifecycle.removeObserver(it) }
     }
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     private fun ComposeContent() {
         Initialize()
@@ -92,16 +99,13 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
         val keyboardController = LocalSoftwareKeyboardController.current
         val layoutDirection = LocalLayoutDirection.current
         val sysPv = WindowInsets.systemBars.asPaddingValues()
-
         var animatedBottom by remember { mutableIntStateOf(0) }
         var isVisible by remember { mutableStateOf(false) }
-
         val content = findViewById<View>(android.R.id.content)
         content.observeKeyboardState(this) { state ->
             animatedBottom = state.heightPx
             isVisible = state.visible
         }
-
         CompositionLocalProvider(LocalKeyboardShow provides isVisible) {
             AppViewTheme(lightStatus) {
                 Scaffold(
@@ -136,7 +140,6 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
         }
     }
 
-    // ========== KEYBOARD HANDLING ==========
     fun View.observeKeyboardState(
         owner: LifecycleOwner,
         onChanged: (KeyboardState) -> Unit
@@ -148,17 +151,19 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
             onChanged(KeyboardState(visible, imeInsets.bottom))
             insets
         }
-
         val compatListener = androidx.core.view.OnApplyWindowInsetsListener(applyListener)
-        val animCallback = object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
-            override fun onProgress(insets: WindowInsetsCompat, runningAnimations: MutableList<WindowInsetsAnimationCompat>): WindowInsetsCompat {
-                val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-                val visible = insets.isVisible(WindowInsetsCompat.Type.ime())
-                onChanged(KeyboardState(visible, imeInsets.bottom))
-                return insets
+        val animCallback =
+            object : WindowInsetsAnimationCompat.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                override fun onProgress(
+                    insets: WindowInsetsCompat,
+                    runningAnimations: MutableList<WindowInsetsAnimationCompat>
+                ): WindowInsetsCompat {
+                    val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+                    val visible = insets.isVisible(WindowInsetsCompat.Type.ime())
+                    onChanged(KeyboardState(visible, imeInsets.bottom))
+                    return insets
+                }
             }
-        }
-
         val globalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
             val r = Rect()
             root.getWindowVisibleDisplayFrame(r)
@@ -190,23 +195,28 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
     }
 
     fun View.currentKeyboardState(): KeyboardState {
-        val insets = ViewCompat.getRootWindowInsets(this) ?: return KeyboardState(visible = false, heightPx = 0)
+        val insets = ViewCompat.getRootWindowInsets(this) ?: return KeyboardState(
+            visible = false,
+            heightPx = 0
+        )
         val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
         val visible = insets.isVisible(WindowInsetsCompat.Type.ime())
         return KeyboardState(visible, imeInsets.bottom)
     }
+
     private fun setupSystemBars() {
         window.hideSystemBar()
         window.setFullScreen()
     }
-    private var activityResultCallback: ((ActivityResult) -> Unit)? = null
-    private val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        listenerResult(result)
-        activityResultCallback?.invoke(result)
-        activityResultCallback = null
-    }
 
-    // Data extraction utilities
+    private var activityResultCallback: ((ActivityResult) -> Unit)? = null
+    private val resultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            listenerResult(result)
+            activityResultCallback?.invoke(result)
+            activityResultCallback = null
+        }
+
     inline fun <reified T : Any?> Activity.getData(key: String?): T? = key?.let { k ->
         intent?.extras?.takeIf { it.containsKey(k) }?.let { extras ->
             @Suppress("UNCHECKED_CAST", "DEPRECATION")
@@ -220,8 +230,12 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
                 T::class == Char::class -> intent.getCharExtra(k, Char.MIN_VALUE) as T
                 T::class == CharSequence::class -> intent.getCharSequenceExtra(k) as T
                 extras.get(k) is ArrayList<*> -> extras.get(k) as T
-                Parcelable::class.java.isAssignableFrom(T::class.java) -> intent.getParcelableExtra(k) as? T
-                java.io.Serializable::class.java.isAssignableFrom(T::class.java) -> intent.getSerializableExtra(k) as? T
+                Parcelable::class.java.isAssignableFrom(T::class.java) -> intent.getParcelableExtra(
+                    k
+                ) as? T
+                Serializable::class.java.isAssignableFrom(T::class.java) -> intent.getSerializableExtra(
+                    k
+                ) as? T
                 else -> throw IllegalArgumentException("Unsupported type ${T::class.java}")
             }
         }
@@ -240,13 +254,16 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
                 T::class == Char::class -> data!!.getCharExtra(key, Char.MIN_VALUE) as T
                 T::class == CharSequence::class -> data!!.getCharSequenceExtra(key) as T
                 extras.get(key) is ArrayList<*> -> extras.get(key) as T
-                Parcelable::class.java.isAssignableFrom(T::class.java) -> data!!.getParcelableExtra(key) as? T
-                java.io.Serializable::class.java.isAssignableFrom(T::class.java) -> data!!.getSerializableExtra(key) as? T
+                Parcelable::class.java.isAssignableFrom(T::class.java) -> data!!.getParcelableExtra(
+                    key
+                ) as? T
+                Serializable::class.java.isAssignableFrom(T::class.java) -> data!!.getSerializableExtra(
+                    key
+                ) as? T
                 else -> throw IllegalArgumentException("Unsupported type ${T::class.java}")
             }
         }
 
-    // Smart navigation
     internal inline fun <reified T : Any> Context.launchActivity(params: Map<String, Any?> = emptyMap()) {
         Intent(this, T::class.java).apply { putExtras(params) }.let { intent ->
             if (this is Activity) startActivity(intent) else {
@@ -256,7 +273,7 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
         }
     }
 
-    internal inline  fun <reified T : Any> launcherForResult(
+    internal inline fun <reified T : Any> launcherForResult(
         params: Map<String, Any?> = emptyMap(),
         noinline dataResult: (ActivityResult) -> Unit = { _ -> }
     ) {
@@ -264,19 +281,22 @@ abstract class BaseActivity(private var lightStatus: Boolean = true) : AppCompat
         Intent(this, T::class.java).apply { putExtras(params) }.let(resultLauncher::launch)
     }
 
-    // Override for custom result handling
     open fun listenerResult(result: ActivityResult) {}
-
-    // Extension for Intent extras
     private fun Intent.putExtras(params: Map<String, Any?>) {
         params.forEach { (key, value) ->
             when (value) {
-                null -> putExtra(key, null as java.io.Serializable?)
-                is Int, is Long, is Boolean, is Float, is Double, is String, is Char, is CharSequence, is Parcelable, is java.io.Serializable ->
+                null -> putExtra(key, null as Serializable?)
+                is Int, is Long, is Boolean, is Float, is Double, is String, is Char, is CharSequence, is Parcelable, is Serializable ->
                     putExtra(key, value as Serializable)
                 is List<*> -> when {
-                    value.all { it is Parcelable } -> putParcelableArrayListExtra(key, ArrayList(value as List<Parcelable>))
-                    value.all { it is String } -> putStringArrayListExtra(key, ArrayList(value as List<String>))
+                    value.all { it is Parcelable } -> putParcelableArrayListExtra(
+                        key,
+                        ArrayList(value as List<Parcelable>)
+                    )
+                    value.all { it is String } -> putStringArrayListExtra(
+                        key,
+                        ArrayList(value as List<String>)
+                    )
                     else -> throw IllegalArgumentException("Unsupported List element type for key=\"$key\"")
                 }
                 else -> throw IllegalArgumentException("Unsupported extra type for key=\"$key\": ${value.javaClass}")

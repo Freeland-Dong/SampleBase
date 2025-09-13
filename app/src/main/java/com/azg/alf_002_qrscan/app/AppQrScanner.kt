@@ -10,10 +10,8 @@ class AppQrScanner : Application() {
     companion object {
         var isAppForeground = false
     }
-
     override fun onCreate() {
         super.onCreate()
-        SharedPreference.Companion.init(this@AppQrScanner)
         startKoin {
             androidLogger()
             androidContext(this@AppQrScanner)
@@ -27,7 +25,3 @@ class AppQrScanner : Application() {
 
     }
 }
-
-val isAppDebug = BuildConfig.build_debug == true
-val sharedPreference get() = SharedPreference.Companion.getInstance()
-val remoteConfig get() = RemoteConfig.Companion.getInstance()

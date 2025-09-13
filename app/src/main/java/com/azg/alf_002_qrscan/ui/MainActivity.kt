@@ -19,7 +19,7 @@ class MainActivity : BaseActivity(){
         innerPadding: InnerPadding,
         context: Context
     ) {
-
+        Greeting("Android")
     }
 }
 @Composable
