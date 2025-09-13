@@ -8,6 +8,8 @@ import java.util.Locale
 
 object PreferenceData : KoinComponent {
     private val sharedPreference: SharedPreference by inject()
+
+
     var languageCode by sharedPreference.string("languageCode", "en")
         private set
     var isFinishFirstFlow by sharedPreference.boolean("isFinishFirstFlow", false)
