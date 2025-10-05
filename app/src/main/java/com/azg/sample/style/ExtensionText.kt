@@ -16,17 +16,25 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.LinkInteractionListener
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -327,4 +335,105 @@ fun TextStyle.fontFamily(@FontRes fontId: Int): TextStyle {
     return this.copy(
         fontFamily = FontFamily(Font(fontId))
     )
+}
+@Stable
+class ComposeTextStyle {
+    private val b = AnnotatedString.Builder()
+
+    fun append(
+        text: String,
+        style: FontStyle? = null,
+        weight: FontWeight? = null,
+        color: Color = Color.Black,
+        underline: Boolean = false,
+        strike: Boolean = false,
+        bg: Color? = null,
+        fontSizeSp: Float? = null,
+        fontFamily: FontFamily? = null,
+        onClick: (() -> Unit)? = null
+    ) = apply {
+        if (text.isEmpty()) return@apply
+        val start = b.length
+        val deco = buildList {
+            if (underline) add(TextDecoration.Underline)
+            if (strike) add(TextDecoration.LineThrough)
+        }.let { if (it.isEmpty()) null else TextDecoration.combine(it) }
+
+        b.pushStyle(
+            SpanStyle(
+                color = color,
+                fontStyle = style,
+                fontWeight = weight,
+                textDecoration = deco,
+                background = bg ?: Color.Transparent,
+                fontSize = (fontSizeSp ?: 0f).takeIf { it > 0f }?.sp ?: TextUnit.Unspecified,
+                fontFamily = fontFamily
+            )
+        )
+        b.append(text)
+        b.pop()
+        val end = b.length
+        if (onClick != null && end > start) {
+            b.addLink(
+                LinkAnnotation.Clickable(
+                    tag = "click",
+                    styles = null,
+                    linkInteractionListener = object : LinkInteractionListener {
+                        override fun onClick(link: LinkAnnotation) {
+                            onClick.invoke()
+                        }
+                    }
+                ),
+                start,
+                end
+            )
+        }
+    }
+
+    fun bold(
+        text: String,
+        color: Color = Color.Black,
+        underline: Boolean = false,
+        strike: Boolean = false,
+        bg: Color? = null,
+        fontSizeSp: Float? = null,
+        fontFamily: FontFamily? = null,
+        onClick: (() -> Unit)? = null
+    ) = append(
+        text, style = null, weight = FontWeight.Bold, color = color,
+        underline = underline, strike = strike, bg = bg, fontSizeSp = fontSizeSp,
+        fontFamily = fontFamily, onClick = onClick
+    )
+
+    fun italic(
+        text: String,
+        color: Color = Color.Black,
+        underline: Boolean = false,
+        strike: Boolean = false,
+        bg: Color? = null,
+        fontSizeSp: Float? = null,
+        fontFamily: FontFamily? = null,
+        onClick: (() -> Unit)? = null
+    ) = append(
+        text, style = FontStyle.Italic, weight = null, color = color,
+        underline = underline, strike = strike, bg = bg, fontSizeSp = fontSizeSp,
+        fontFamily = fontFamily, onClick = onClick
+    )
+
+    fun normal(
+        text: String,
+        color: Color = Color.Black,
+        underline: Boolean = false,
+        strike: Boolean = false,
+        bg: Color? = null,
+        fontSizeSp: Float? = null,
+        fontFamily: FontFamily? = null,
+        onClick: (() -> Unit)? = null
+    ) = append(
+        text, style = null, weight = null, color = color,
+        underline = underline, strike = strike, bg = bg, fontSizeSp = fontSizeSp,
+        fontFamily = fontFamily, onClick = onClick
+    )
+
+    fun build(): AnnotatedString = b.toAnnotatedString()
 }
